@@ -2,6 +2,8 @@ package org.apache.hadoop.metrics2.sink.influxdb;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.text.StringCharacterIterator;
+import java.text.CharacterIterator;
 
 import org.apache.commons.configuration.SubsetConfiguration;
 import org.apache.commons.logging.Log;
@@ -63,10 +65,10 @@ public class InfluxdbSink implements MetricsSink, Closeable {
         StringBuilder tags = new StringBuilder();
 
         for (MetricsTag tag : metricsRecord.tags()) {
-            if (tag.value() != null) {
-                tags.append(tag.name())
+            if (tag.value() != null && !tag.value().isEmpty()) {
+                tags.append(escapeTagKeyValues(tag.name()))
                     .append("=")
-                    .append(tag.value())
+                    .append(escapeTagKeyValues(tag.value()))
                     .append(",");
             }
         }
@@ -161,5 +163,59 @@ public class InfluxdbSink implements MetricsSink, Closeable {
 
         this.clusterName = conf.getString("cluster", "hadoop");
         LOG.info("Clustername set to: " + this.clusterName);
+    }
+
+    private static String escapeTagKeyValues(String value) {
+        final StringBuilder result = new StringBuilder();
+        final StringCharacterIterator iter = new StringCharacterIterator(value);
+        char c = iter.current();
+        while (c != CharacterIterator.DONE) {
+            if (c == ',') {
+                result.append("\\,");
+            } else if ( c == '=') {
+                result.append("\\=");
+            } else if ( c == ' ') {
+                result.append("\\ ");
+            } else {
+                result.append(c);
+            }
+            c = iter.next();
+        }
+
+        return result.toString();
+    }
+
+    private static String escapeMeasurements(String value) {
+        final StringBuilder result = new StringBuilder();
+        final StringCharacterIterator iter = new StringCharacterIterator(value);
+        char c = iter.current();
+        while (c != CharacterIterator.DONE) {
+            if (c == ',') {
+                result.append("\\,");
+            } else if ( c == ' ') {
+                result.append("\\ ");
+            } else {
+                result.append(c);
+            }
+            c = iter.next();
+        }
+
+        return result.toString();
+    }
+
+    private static String escapeStringField(String value) {
+        final StringBuilder result = new StringBuilder();
+        final StringCharacterIterator iter = new StringCharacterIterator(value);
+        char c = iter.current();
+        while (c != CharacterIterator.DONE) {
+            if (c == '"') {
+                result.append("\\\"");
+            } else {
+                result.append(c);
+            }
+            c = iter.next();
+        }
+
+        return result.toString();
     }
 }

@@ -69,7 +69,7 @@ public class InfluxDBService {
         EntityUtils.consume(response.getEntity());
 
         if (statusCode != 204) {
-            LOG.error("Unable to write or parse: \n" + lines + "\n");
+            LOG.error("Unable to write or parse: " + response.getStatusLine().getReasonPhrase() + "\n" + lines + "\n");
             throw new IOException("Error writing metrics influxdb statuscode = " + statusCode);
         }
         else {
